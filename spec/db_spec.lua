@@ -1,7 +1,10 @@
 package.preload['sqlite3'] = require 'lsqlite3'
+package.path = package.path .. ';mocks/?.lua'
+_G.Runtime = require 'runtime'
 local log = require 'vendor.log.log'
 
-local model = require 'model'
+local Db = require 'db'
+local model = Db.Model
 local class = require 'vendor.middleclass.middleclass'
 
 describe('Model', function()
@@ -61,6 +64,22 @@ describe('Model', function()
 			assert.equal(player:get('name'), 'Manolo')
 			assert.equal(player:get('company'), 'Yogome')
 		end)
+	end)
 
+	describe('Database', function()
+		it('shoud be instantiated', function()
+			local db = Db:new {location = 'memory'}
+			assert.truthy(db)
+		end)
+	end)
+
+	describe('Database migrations', function()
+		setup(function()
+			db = Db:new {location = 'memory'}
+		end)
+
+		it('returns 0 as first version', function()
+			assert.equal(db:migrate(), 0)
+		end)
 	end)
 end)

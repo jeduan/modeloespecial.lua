@@ -5,6 +5,8 @@ local sqlite = require 'sqlite3'
 
 local Model = class('Model')
 
+Model.static.db = nil
+
 function Model:initialize(attributes, options)
 	assert(type(self) == 'table', 'Called .get instead of :get')
 	self.changed = {}
