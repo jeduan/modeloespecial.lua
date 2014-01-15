@@ -9,7 +9,7 @@
     "build.settings"
   ],
   "dependencies": {
-    "log": "~0.1.0",
+    "log": "~0.3.0",
     "middleclass": "~3.0.1",
     "vent": "~0.2.0"
   }
