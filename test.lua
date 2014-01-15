@@ -53,5 +53,14 @@ describe('Model', function()
 			assert.equal(player:get('name'), 'Manolo')
 		end)
 
+		it('setting multiple keys works', function()
+			local player = Player:new {
+				name = 'Jeduan'
+			}
+			player:set {name = 'Manolo', company = 'Yogome'}
+			assert.equal(player:get('name'), 'Manolo')
+			assert.equal(player:get('company'), 'Yogome')
+		end)
+
 	end)
 end)

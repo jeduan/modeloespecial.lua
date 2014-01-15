@@ -6,7 +6,8 @@ local sqlite = require 'sqlite3'
 local Model = class('Model')
 
 function Model:initialize(attributes, options)
-	self.changedAttributes = {}
+	assert(type(self) == 'table', 'Called .get instead of :get')
+	self.changed = {}
 
 	self.attributes = attributes or {}
 	assert(type(self.attributes) == 'table', 'Expected attributes to be a table')
@@ -29,12 +30,39 @@ function Model:save()
 end
 
 function Model:get(attribute)
+	assert(type(self) == 'table', 'Called .get instead of :get')
 	return self.attributes[attribute]
 end
 
-function Model:set(attribute, value)
-	self.attributes[attribute] = value
-	table.insert(self.changedAttributes, attribute)
+function Model:set(key, val, options)
+	assert(type(self) == 'table', 'Called .set instead of :set')
+
+	local attrs, prev, current
+	local changes = {}
+
+	if key == nil then
+		return self
+	end
+
+	if type(key) == 'table' then
+		attrs = key
+		options = val
+	else
+		attrs = {}
+		attrs[key] = val
+	end
+
+	-- TODO validate
+	current = self.attributes
+	for key, val in pairs(attrs) do
+		-- TODO hacer que compare tablas
+		if current[key] ~= val then
+			table.insert(changes, key)
+			self.changed[key] = true
+		end
+		current[key] = val
+	end
+	return self
 end
 
 function Model:fetch()
