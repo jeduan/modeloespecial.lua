@@ -96,10 +96,63 @@ describe('Model', function()
 			stmt:reset()
 
 			local player = Player:new {name = 'Jeduan'}
-			player:save()
+			assert.truthy(player:save())
 
 			assert.equal(stmt:step(), sqlite.ROW)
 			assert.equal(stmt:get_value(0), 1)
+		end)
+
+	end)
+
+	describe('Updates documents', function()
+		setup(function()
+			local function createPlayers(schemaVersion, exec)
+				if schemaVersion < 1 then
+					exec "CREATE TABLE players(name VARCHAR)"
+				end
+				return 1
+			end
+			db = Db:new {location = 'memory', migration = createPlayers}
+			Player = model:extend('players', {
+				'name'
+			})
+			local sql = 'SELECT COUNT(*) FROM players WHERE name=:name'
+			stmt = db.db:prepare(sql)
+
+			player = Player:new {name = 'Jeduan'}
+			player:save()
+		end)
+
+		teardown(function()
+			db = nil
+			Player = nil
+			stmt:finalize()
+			stmt = nil
+			player = nil
+		end)
+
+		it('updates a document', function()
+			stmt:bind_names {name = 'Jeduan'}
+			assert.equal(stmt:step(), sqlite.ROW)
+			assert.equal(stmt:get_value(0), 1)
+			stmt:reset()
+			stmt:bind_names {name = 'Manolo'}
+			assert.equal(stmt:step(), sqlite.ROW)
+			assert.equal(stmt:get_value(0), 0)
+			stmt:reset()
+
+			assert.truthy(player.id)
+			player:set {name = 'Manolo'}
+			assert.True(player:save())
+
+			stmt:bind_names {name = 'Jeduan'}
+			assert.equal(stmt:step(), sqlite.ROW)
+			assert.equal(stmt:get_value(0), 0)
+			stmt:reset()
+			stmt:bind_names {name = 'Manolo'}
+			assert.equal(stmt:step(), sqlite.ROW)
+			assert.equal(stmt:get_value(0), 1)
+			stmt:reset()
 		end)
 
 	end)

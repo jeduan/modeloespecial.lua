@@ -17,12 +17,12 @@ function Model:initialize(attributes, options)
 end
 
 function Model:save()
-	assert(Model.db, 'The database is closed')
-	assert(Model.db:isopen(), 'The database is closed')
+	assert(self.class.db, 'The database is closed')
+	assert(self.class.db:isopen(), 'The database is closed')
 	if not self.id then
 		return self:insert()
 	else
-		-- update()
+		return self:update()
 	end
 end
 
@@ -80,26 +80,84 @@ function Model:insert()
 		end
 	end
 
-	sql = sql:format(self.tableName,
-	table.concat(storedAttributes, ','),
-	table.concat(preparedAttributes, ','))
+	sql = sql:format(self.class.static.tableName,
+		table.concat(storedAttributes, ','),
+		table.concat(preparedAttributes, ','))
 
-	local stmt = Model.db:prepare(sql)
+	local stmt = self.class.db:prepare(sql)
 	assert(stmt, 'Failed to prepare insert-statement')
-	stmt:bind_names(self.attributes)
-	assert(stmt:step() == sqlite.DONE, 'Failed to insert insert-statement '.. Model.db:errmsg())
+	assert(stmt:bind_names(self.attributes) == sqlite.OK, 'Failed to bind values')
+	local step = stmt:step()
+	if step ~= sqlite.DONE then
+		stmt:finalize()
+		return nil, self.class.db:errmsg()
+	end
 
-	self.id = Model.db:last_insert_rowid()
+	stmt:finalize()
+	stmt = nil
+	self.id = self.class.db:last_insert_rowid()
 	assert(self.id ~= 0, 'Insert failed')
 
-	return self
+	return self.id
+end
+
+function Model:update()
+	assert(self.id, 'Tried to run update on not inserted model')
+
+	local sql = 'UPDATE %s SET %s WHERE %s=:modelId'
+	-- TODO validate object first
+
+	local values = {modelId = self.id}
+	local changes = {}
+
+	for k, v in pairs(self.class.static.attrs) do
+		if self.changed[k] then
+			table.insert(changes, k .. '=:' .. k)
+			values[k] = self.attributes[k]
+			shouldUpdate = true
+		end
+	end
+
+	if #changes == 0 then
+		return true
+	end
+
+	sql = sql:format(self.class.static.tableName,
+		table.concat(changes, ', '),
+		self.class.static.idAttribute)
+
+	local stmt = self.class.db:prepare(sql)
+	assert(stmt, 'Failed to prepare update-model statement')
+
+	assert(stmt:bind_names(values) == sqlite.OK, 'Failed to bind values')
+	local step = stmt:step()
+	stmt:finalize()
+	stmt = nil
+
+	if step == sqlite.DONE then
+		return true
+	else
+		return nil, self.class.db:errmsg()
+	end
 end
 
 function Model.static:extend(tableName, attributes, options)
 	assert(type(self) == 'table', 'Ensure you are calling model:extend and not model.extend')
+
+	if type(tableName) == 'table' then
+		options = tableName
+		tableName = options.tableName or options.name
+		options.tableName = nil
+		attributes = options.attributes or options.attrs
+		options.attributes = nil
+	end
 	assert(tableName, 'model:extend should be called with tableName')
+	options = options or {}
+
+	-- TODO classify tableName
 	local klass = class(tableName, Model)
-	klass.tableName = tableName
+	klass.static.tableName = tableName
+	klass.static.idAttribute = options.idAttribute or 'ROWID'
 
 	assert(attributes, 'model:extend should be called with attributes')
 	klass.static.attrs = {}
