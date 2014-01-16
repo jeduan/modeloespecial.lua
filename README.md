@@ -1,6 +1,8 @@
-# Modelo Especial
+# modeloespecial.lua
 
 An ORM for Corona SDK based on Backbone.js
+
+![](http://d.pr/i/EGRS+)
 
 ```lua
 local User = Model:extend {table = 'users'}
@@ -9,13 +11,14 @@ function User:fullName()
 end
 
 local user = User:new {firstName = 'John', lastName = 'Doe'}
+user:fullName() -- John Doe
 user:save()
 
-user:get('name') -- Foo
-
-user:set {name = 'Bar', color = 'white'}
+user:set {firstName = 'Foo', lastName = 'White'}
 user:save()
 ```
+
+Fair warning: This is a work in progress, but expect fast updates as we use this on our games.
 
 ## Installing
 
@@ -27,9 +30,7 @@ Generate a project using [corona-bower](http://github.com/jeduan/generator-coron
 
 ### Manually
 
-Drag `modeloespecial.lua`, `model.lua`, `middleclass.lua`, `vent.lua` and `log.lua` to your project.
-
-Then fix the `require` directives at the top of the project
+Download the zip containing all files on the [Releases tab](https://github.com/jeduan/modeloespecial.lua/releases)
 
 ## Initialize
 
@@ -135,3 +136,7 @@ or
 ### Model:fetchById()
 
 Finds a user by the id
+
+``lua
+local user = User.fetchById(1)
+```
