@@ -104,10 +104,6 @@ function Model.static:fetchById(id)
 
 end
 
-function Model:fetch()
-	assert(type(self) == 'table', 'Tried to call .fetch() instead of :fetch()')
-end
-
 function Model:insert()
 	assert(not self.id, 'Tried to run insert on a model with id')
 	local sql = 'INSERT INTO %s (%s) VALUES (%s)'
