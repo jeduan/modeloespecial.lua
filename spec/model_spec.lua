@@ -104,7 +104,7 @@ describe('Model', function()
 
 	end)
 
-	describe('Updates documents', function()
+	describe('Updates and fetches documents', function()
 		setup(function()
 			local function createPlayers(schemaVersion, exec)
 				if schemaVersion < 1 then
@@ -120,7 +120,7 @@ describe('Model', function()
 			stmt = db.db:prepare(sql)
 
 			player = Player:new {name = 'Jeduan'}
-			player:save()
+			playerId = player:save()
 		end)
 
 		teardown(function()
@@ -129,6 +129,7 @@ describe('Model', function()
 			stmt:finalize()
 			stmt = nil
 			player = nil
+			playerId = nil
 		end)
 
 		it('updates a document', function()
@@ -153,6 +154,30 @@ describe('Model', function()
 			assert.equal(stmt:step(), sqlite.ROW)
 			assert.equal(stmt:get_value(0), 1)
 			stmt:reset()
+		end)
+
+		--[[
+		it('can change a document id', function()
+			pending('Cant do this right now')
+		end)
+		--]]
+
+		it('fetches a document', function()
+			stmt:bind_names {name = 'Manolo'}
+			assert.equal(stmt:step(), sqlite.ROW)
+			assert.equal(stmt:get_value(0), 1)
+			assert.truthy(playerId)
+			stmt:reset()
+
+			local p = Player:fetchById(1)
+			assert.equal('Manolo', p:get('name'))
+			assert.equal(1, p.id)
+
+		end)
+
+		it('returns nil when document does not exist', function()
+			local _ = Player:fetchById(20)
+			assert.equal(_, nil)
 		end)
 
 	end)

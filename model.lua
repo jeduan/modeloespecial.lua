@@ -6,14 +6,24 @@ local sqlite = require 'sqlite3'
 local Model = class('Model')
 
 function Model:initialize(attributes, options)
-	assert(type(self) == 'table', 'Called .get instead of :get')
-	self.changed = {}
+	assert(type(self) == 'table', 'Called .new instead of :new')
+	attributes = attributes or {}
+	options    = options or {}
+	assert(type(attributes) == 'table', 'Expected attributes to be a table')
+	self.changed    = {}
+	self.attributes = {}
+	for k, v in pairs(attributes) do
+		if string.lower(k) == string.lower(self.class.idAttribute) then
+			self.id = v
+		elseif string.lower(k) == 'id' then
+			self.id = v
+		end
+		self.attributes[k] = attributes[k]
+	end
 
-	self.attributes = attributes or {}
-	assert(type(self.attributes) == 'table', 'Expected attributes to be a table')
+	self.synced = options.synced
 
 	-- TODO aqui se pueden poner los defaults
-	self.isNew = true
 end
 
 function Model:save()
@@ -62,8 +72,40 @@ function Model:set(key, val, options)
 	return self
 end
 
+function Model.static:fetchById(id)
+	assert(type(self) == 'table', 'Tried to call .fetchById() instead of :fetchById()')
+	assert(type(id) == 'number', 'Expected arg to be a number')
+
+	local attrs = {self.idAttribute}
+	for k, v in pairs(self.attrs) do
+		table.insert(attrs, k)
+	end
+
+	local sql = string.format('SELECT %s FROM %s WHERE %s=?1',
+		table.concat(attrs, ', '),
+		self.tableName,
+		self.idAttribute
+	)
+
+	local stmt = self.db:prepare(sql)
+	assert(stmt, 'Failed to prepare select-id statement')
+
+	assert(stmt:bind_values(id) == sqlite.OK, 'Failed to bind parameters')
+	local step = stmt:step()
+
+	if step == sqlite.ROW then
+		local attributes = stmt:get_named_values()
+		return self:new(attributes, {synced = true})
+	elseif step == sqlite.DONE then
+		stmt:finalize()
+		stmt = nil
+		return nil
+	end
+
+end
+
 function Model:fetch()
-	assert(type(self) == 'table', 'self')
+	assert(type(self) == 'table', 'Tried to call .fetch() instead of :fetch()')
 end
 
 function Model:insert()
@@ -73,14 +115,14 @@ function Model:insert()
 	local preparedAttributes = {}
 
 	-- TODO validate object beforehand
-	for k, v in pairs(self.class.static.attrs) do
+	for k, v in pairs(self.class.attrs) do
 		if self.attributes[k] ~= nil then
 			table.insert(storedAttributes, k)
 			table.insert(preparedAttributes, ':' .. k)
 		end
 	end
 
-	sql = sql:format(self.class.static.tableName,
+	sql = sql:format(self.class.tableName,
 		table.concat(storedAttributes, ','),
 		table.concat(preparedAttributes, ','))
 
@@ -110,11 +152,10 @@ function Model:update()
 	local values = {modelId = self.id}
 	local changes = {}
 
-	for k, v in pairs(self.class.static.attrs) do
-		if self.changed[k] then
+	for k, v in pairs(self.changed or {}) do
+		if self.class.attrs[k] then
 			table.insert(changes, k .. '=:' .. k)
 			values[k] = self.attributes[k]
-			shouldUpdate = true
 		end
 	end
 
@@ -122,9 +163,9 @@ function Model:update()
 		return true
 	end
 
-	sql = sql:format(self.class.static.tableName,
+	sql = sql:format(self.class.tableName,
 		table.concat(changes, ', '),
-		self.class.static.idAttribute)
+		self.class.idAttribute)
 
 	local stmt = self.class.db:prepare(sql)
 	assert(stmt, 'Failed to prepare update-model statement')
@@ -135,6 +176,7 @@ function Model:update()
 	stmt = nil
 
 	if step == sqlite.DONE then
+		self.changed = {}
 		return true
 	else
 		return nil, self.class.db:errmsg()
