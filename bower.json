@@ -6,7 +6,9 @@
   "ignore": [
     "config.lua",
     "main.lua",
-    "build.settings"
+    "build.settings",
+    "mocks",
+    "spec"
   ],
   "dependencies": {
     "log": "~0.3.0",
