@@ -137,6 +137,6 @@ or
 
 Finds a user by the id
 
-``lua
+```lua
 local user = User.fetchById(1)
 ```
