@@ -123,7 +123,7 @@ function Model:insert()
 		table.concat(preparedAttributes, ','))
 
 	local stmt = self.class.db:prepare(sql)
-	assert(stmt, 'Failed to prepare insert-statement')
+	assert(stmt, 'Failed to prepare insert-statement ' .. self.class.db:errmsg())
 	assert(stmt:bind_names(self.attributes) == sqlite.OK, 'Failed to bind values')
 	local step = stmt:step()
 	if step ~= sqlite.DONE then
@@ -179,29 +179,28 @@ function Model:update()
 	end
 end
 
-function Model.static:extend(tableName, attributes, options)
+function Model.static:extend(options)
 	assert(type(self) == 'table', 'Ensure you are calling model:extend and not model.extend')
 
-	if type(tableName) == 'table' then
-		options = tableName
-		tableName = options.tableName or options.name
-		options.tableName = nil
-		attributes = options.attributes or options.attrs
-		options.attributes = nil
-	end
-	assert(tableName, 'model:extend should be called with tableName')
 	options = options or {}
+	assert(options.table, 'model:extend should specify a table')
+
+	if not options.attrs then
+		if self.db then
+			options.attrs = {}
+			for row in self.db:nrows('PRAGMA table_info('.. options.table ..')') do
+				options.attrs[row.name] = row.type
+			end
+		else
+			options.attrs = {}
+		end
+	end
 
 	-- TODO classify tableName
-	local klass = class(tableName, Model)
-	klass.static.tableName = tableName
-	klass.static.idAttribute = options.idAttribute or 'ROWID'
-
-	assert(attributes, 'model:extend should be called with attributes')
-	klass.static.attrs = {}
-	for i, k in ipairs(attributes) do
-		klass.static.attrs[k] = true
-	end
+	local klass = class(options.table, self)
+	klass.tableName = options.table
+	klass.idAttribute = options.idAttribute or 'ROWID'
+	klass.attrs = options.attrs
 
 	return klass
 end

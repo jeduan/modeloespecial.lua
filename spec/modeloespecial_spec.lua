@@ -2,13 +2,13 @@ package.preload['sqlite3'] = require 'lsqlite3'
 _G.Runtime = require 'mocks.runtime'
 local log = require 'vendor.log.log'
 
-local Db = require 'db'
-local model = Db.Model
+local ModeloEspecial = require 'modeloespecial'
+local model = ModeloEspecial.Model
 local sqlite = require 'sqlite3'
 
 describe('Database', function()
 	setup(function()
-		db = Db:new {location = 'memory'}
+		db = ModeloEspecial:new {location = 'memory'}
 	end)
 
 	teardown(function()
@@ -21,14 +21,14 @@ describe('Database', function()
 
 	it('models have access to the db object', function()
 		assert.truthy(model.db)
-		local Player = model:extend('players', {name = true})
+		local Player = model:extend {table = 'players'}
 		assert.truthy(Player.db)
 	end)
 end)
 
 describe('Database migrations', function()
 	setup(function()
-		db = Db:new {location = 'memory'}
+		db = ModeloEspecial:new {location = 'memory'}
 		sql = 'SELECT count(*) FROM sqlite_master WHERE type="table" AND name="players"'
 		tableExists = db.db:prepare(sql)
 	end)
@@ -72,7 +72,7 @@ describe('Database migrations', function()
 			end
 			return 1
 		end
-		local test = Db:new {
+		local test = ModeloEspecial:new {
 			location = 'memory',
 			migration = migration
 		}

@@ -2,17 +2,15 @@ package.preload['sqlite3'] = require 'lsqlite3'
 _G.Runtime = require 'mocks.runtime'
 local log = require 'vendor.log.log'
 
-local Db = require 'db'
-local model = Db.Model
+local ModeloEspecial = require 'modeloespecial'
+local model = ModeloEspecial.Model
 local class = require 'vendor.middleclass.middleclass'
 local sqlite = require 'sqlite3'
 
 describe('Model', function()
 	describe('Subclassing', function()
 		it('works', function()
-			local Fruit = model:extend('fruits', {
-				'name',
-			})
+			local Fruit = model:extend {table = 'fruits'}
 			local orange = Fruit:new()
 
 			assert.truthy(Fruit:isSubclassOf(model))
@@ -23,9 +21,7 @@ describe('Model', function()
 
 	describe('Creating classes', function()
 		setup(function()
-			Player = model:extend('players', {
-				name = 'string'
-			})
+			Player = model:extend {table = 'players'}
 		end)
 
 		teardown(function()
@@ -74,10 +70,8 @@ describe('Model', function()
 				end
 				return 1
 			end
-			db = Db:new {location = 'memory', migration = createPlayers}
-			Player = model:extend('players', {
-				'name'
-			})
+			db = ModeloEspecial:new {location = 'memory', migration = createPlayers}
+			Player = model:extend {table = 'players'}
 			local sql = 'SELECT COUNT(*) FROM players WHERE name=:name'
 			stmt = db.db:prepare(sql)
 		end)
@@ -112,10 +106,8 @@ describe('Model', function()
 				end
 				return 1
 			end
-			db = Db:new {location = 'memory', migration = createPlayers}
-			Player = model:extend('players', {
-				'name'
-			})
+			db = ModeloEspecial:new {location = 'memory', migration = createPlayers}
+			Player = model:extend {table = 'players'}
 			local sql = 'SELECT COUNT(*) FROM players WHERE name=:name'
 			stmt = db.db:prepare(sql)
 

@@ -1,7 +1,7 @@
 {
-  "name": "orm",
+  "name": "modeloespecial",
   "description": "an orm for sqlite",
-  "main": "orm.lua",
+  "main": "modeloespecial.lua",
   "version": "0.0.1",
   "ignore": [
     "config.lua",
