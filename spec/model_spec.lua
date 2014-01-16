@@ -3,17 +3,17 @@ _G.Runtime = require 'mocks.runtime'
 local log = require 'vendor.log.log'
 
 local ModeloEspecial = require 'modeloespecial'
-local model = ModeloEspecial.Model
+local Model = ModeloEspecial.Model
 local class = require 'vendor.middleclass.middleclass'
 local sqlite = require 'sqlite3'
 
 describe('Model', function()
 	describe('Subclassing', function()
 		it('works', function()
-			local Fruit = model:extend {table = 'fruits'}
+			local Fruit = Model:extend {table = 'fruits'}
 			local orange = Fruit:new()
 
-			assert.truthy(Fruit:isSubclassOf(model))
+			assert.truthy(Fruit:isSubclassOf(Model))
 			assert.truthy(orange:isInstanceOf(Fruit))
 		end)
 
@@ -21,7 +21,7 @@ describe('Model', function()
 
 	describe('Creating classes', function()
 		setup(function()
-			Player = model:extend {table = 'players'}
+			Player = Model:extend {table = 'players'}
 		end)
 
 		teardown(function()
@@ -71,7 +71,7 @@ describe('Model', function()
 				return 1
 			end
 			db = ModeloEspecial:new {location = 'memory', migration = createPlayers}
-			Player = model:extend {table = 'players'}
+			Player = Model:extend {table = 'players'}
 			local sql = 'SELECT COUNT(*) FROM players WHERE name=:name'
 			stmt = db.db:prepare(sql)
 		end)
@@ -107,7 +107,7 @@ describe('Model', function()
 				return 1
 			end
 			db = ModeloEspecial:new {location = 'memory', migration = createPlayers}
-			Player = model:extend {table = 'players'}
+			Player = Model:extend {table = 'players'}
 			local sql = 'SELECT COUNT(*) FROM players WHERE name=:name'
 			stmt = db.db:prepare(sql)
 
@@ -172,5 +172,37 @@ describe('Model', function()
 			assert.equal(_, nil)
 		end)
 
+	end)
+
+	describe('Model methods', function()
+		it('sets up', function()
+			local function createPlayers(schemaVersion, exec)
+				if schemaVersion < 1 then
+					local sql = [[CREATE TABLE players (
+firstName VARCHAR,
+lastName VARCHAR,
+age INTEGER)]]
+					exec(sql)
+				end
+				return 1
+			end
+			local db = ModeloEspecial:new {
+				location = 'memory',
+				migration = createPlayers,
+			}
+			local Player = Model:extend {table = 'players'}
+			function Player:fullName()
+				return self:get'firstName' .. ' ' .. self:get'lastName'
+			end
+
+			local player = Player:new {
+				firstName = 'Jeduan',
+				lastName = 'Cornejo'
+			}
+			function Player:getFullName()
+				return self:get'firstName' .. ' ' .. self:get'lastName'
+			end
+			assert.equal('Jeduan Cornejo', player:getFullName())
+		end)
 	end)
 end)
