@@ -10,6 +10,7 @@ function Model:initialize(attributes, options)
 	attributes = attributes or {}
 	options    = options or {}
 	assert(type(attributes) == 'table', 'Expected attributes to be a table')
+
 	self.changed    = {}
 	self.attributes = {}
 	for k, v in pairs(attributes) do
@@ -19,6 +20,14 @@ function Model:initialize(attributes, options)
 			self.id = v
 		end
 		self.attributes[k] = attributes[k]
+	end
+
+	if self.class.defaults then
+		for k, v in pairs(self.class.defaults or {}) do
+			if self.attributes[k] == nil then
+				self.attributes[k] = self.class.defaults[k]
+			end
+		end
 	end
 
 	self.synced = options.synced

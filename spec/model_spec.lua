@@ -174,8 +174,8 @@ describe('Model', function()
 
 	end)
 
-	describe('Model methods', function()
-		it('sets up', function()
+	describe('Model functionalities', function()
+		setup(function()
 			local function createPlayers(schemaVersion, exec)
 				if schemaVersion < 1 then
 					local sql = [[CREATE TABLE players (
@@ -190,19 +190,39 @@ age INTEGER)]]
 				location = 'memory',
 				migration = createPlayers,
 			}
-			local Player = Model:extend {table = 'players'}
+			Player = Model:extend {table = 'players'}
 			function Player:fullName()
 				return self:get'firstName' .. ' ' .. self:get'lastName'
 			end
 
-			local player = Player:new {
+			player = Player:new {
 				firstName = 'Jeduan',
 				lastName = 'Cornejo'
 			}
 			function Player:getFullName()
 				return self:get'firstName' .. ' ' .. self:get'lastName'
 			end
+		end)
+
+		teardown(function()
+			Player = nil
+			player = nil
+		end)
+
+		it('methods work', function()
 			assert.equal('Jeduan Cornejo', player:getFullName())
+		end)
+
+		it('defaults work', function()
+			Player.defaults = {
+				lastName = 'Lopez'
+			}
+
+			local p = Player:new {firstName = 'Juan'}
+
+			assert.equal(p:get'firstName', 'Juan')
+			assert.equal(p:get'lastName', 'Lopez')
+			assert.equal(p:getFullName(), 'Juan Lopez')
 		end)
 	end)
 end)

@@ -140,3 +140,16 @@ Finds a user by the id
 ```lua
 local user = User.fetchById(1)
 ```
+
+### Model.defaults
+
+Sets default values for attributes
+
+```lua
+User.defaults = {
+  color = 'red'
+}
+local user = User:new()
+
+user:get'color' -- 'red'
+```
