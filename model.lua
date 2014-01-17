@@ -190,8 +190,8 @@ end
 
 function Model.static:extend(options)
 	assert(type(self) == 'table', 'Ensure you are calling model:extend and not model.extend')
+	assert(type(options) == 'table', 'Expected an options table')
 
-	options = options or {}
 	assert(options.table, 'model:extend should specify a table')
 
 	if not options.attrs then
