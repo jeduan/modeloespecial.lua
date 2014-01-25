@@ -1,11 +1,20 @@
 package.preload['sqlite3'] = require 'lsqlite3'
 _G.Runtime = require 'mocks.runtime'
+_G.timer = require 'mocks.timer'
 local log = require 'vendor.log.log'
+local ev = require 'ev'
 
 local ModeloEspecial = require 'modeloespecial'
 local Model = ModeloEspecial.Model
 local class = require 'vendor.middleclass.middleclass'
 local sqlite = require 'sqlite3'
+
+setloop'ev'
+local function nextTick(onTimeout)
+	ev.Timer.new(function()
+		onTimeout()
+	end, 2^-40):start(ev.Loop.default)
+end
 
 describe('Model', function()
 	describe('Subclassing', function()
@@ -224,5 +233,82 @@ age INTEGER)]]
 			assert.equal(p:get'lastName', 'Lopez')
 			assert.equal(p:getFullName(), 'Juan Lopez')
 		end)
+
+		it('emits saving, creating and updating events', function(done)
+			nextTick(async(function()
+				local c = {
+					saved = 0,
+					created = false,
+					updated = false
+				}
+				local v = {
+					saved   = function(i) c.saved   = c.saved + 1 end,
+					created = function(i) c.created = true end,
+					updated = function(i) c.updated = true end,
+				}
+				Player:on('saved',   v.saved)
+				Player:on('created', v.created)
+				Player:on('updated', v.updated)
+
+				local p = Player:new {firstName = 'Alberto'}
+				p:save()
+				p:set {firstName = 'Tino'}
+				p:save()
+
+				timer.performWithDelay(1, function()
+					assert.equals(c.saved, 2)
+					assert.True(c.created)
+					assert.True(c.updated)
+					Player:off('saved')
+					Player:off('created')
+					Player:off('updated')
+					done()
+				end)
+
+			end))
+		end)
+
+		it('can abort saving if an error is thown on saving', function(done)
+			nextTick(async(function()
+				local p = Player:new { firstName = 'Tino' }
+				local function checkAdult(self)
+					local age = self:get'age'
+					if not age or age < 18 then
+						error 'User is not an adult'
+					end
+				end
+				Player:on('saving', checkAdult)
+				p:save()
+				assert.falsy(p.id, 'Did create a player without age')
+				p:set {age = 30}
+				p:save()
+				assert.truthy(p.id)
+				Player:off('saving')
+				done()
+			end))
+		end)
+
+		it('can change a model with events', function(done)
+			nextTick(async(function()
+				local p = Player:new { firstName = 'Tino' }
+				local function checkAdult(self)
+					local age = self:get'age'
+					local lastName = self:get'lastName'
+					if not age then
+						self:set {age = 33}
+					end
+					if lastName == 'Lopez' then
+						self:set {lastName = 'Tello'}
+					end
+				end
+				Player:on('creating', checkAdult)
+				p:save()
+				assert.equals(p:get'age', 33)
+				assert.equals(p:get'lastName', 'Tello')
+				Player:off('creating')
+				done()
+			end))
+		end)
+
 	end)
 end)

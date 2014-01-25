@@ -14,6 +14,7 @@ function Model:initialize(attributes, options)
 
 	self.changed    = {}
 	self.attributes = {}
+	self._previousAttributes = {}
 	for k, v in pairs(attributes) do
 		if string.lower(k) == string.lower(self.class.idAttribute) then
 			self.id = v
@@ -31,9 +32,11 @@ function Model:initialize(attributes, options)
 		end
 	end
 
-	self.synced = options.synced
-
-	-- TODO aqui se pueden poner los defaults
+	if options.synced then
+		for k, v in pairs(self.attributes) do
+			self._previousAttributes[k] = v
+		end
+	end
 end
 
 function Model:_pcallListeners(event)
@@ -53,16 +56,16 @@ function Model:save()
 	assert(self.class.db:isopen(), 'The database is closed')
 	local status, err
 	status, err = self:_pcallListeners('saving')
-	if not status then return end
+	if not status then return false end
 
 	if not self.id then
 		status, err = self:_pcallListeners('creating')
-		if not status then return end
+		if not status then return false end
 		return self:_create()
 
 	else
 		status, err = self:_pcallListeners('updating')
-		if not status then return end
+		if not status then return false end
 		return self:_update()
 	end
 end
@@ -144,7 +147,6 @@ function Model:_create()
 	local storedAttributes = {}
 	local preparedAttributes = {}
 
-	-- TODO validate object beforehand
 	for k, v in pairs(self.class.attrs) do
 		if self.attributes[k] ~= nil then
 			table.insert(storedAttributes, k)
@@ -206,6 +208,12 @@ function Model:_update()
 	local step = stmt:step()
 	stmt:finalize()
 	stmt = nil
+
+	for k, v in pairs(values) do
+		if k ~= modelId then
+			self._previousAttributes[k] = v
+		end
+	end
 
 	if step == sqlite.DONE then
 		self.changed = {}
