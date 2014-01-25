@@ -93,7 +93,6 @@ function Model:set(key, val, options)
 		attrs[key] = val
 	end
 
-	-- TODO validate
 	current = self.attributes
 	for key, val in pairs(attrs) do
 		-- TODO hacer que compare tablas

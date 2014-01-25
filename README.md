@@ -153,3 +153,8 @@ local user = User:new()
 
 user:get'color' -- 'red'
 ```
+
+## Changelog
+
+ * 0.0.3 Adds `creating`, `created`, `saving`, `saved`, `updating` and `updated` events
+ * 0.0.2 Adds defaults
