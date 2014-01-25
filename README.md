@@ -154,6 +154,31 @@ local user = User:new()
 user:get'color' -- 'red'
 ```
 
+### Model events
+
+Before persisting changes, a `saving` event is emitted. Also, either an `updating` or `creating` event will be emitted.
+
+If a listener to this events throws an `error` then the model will not be persisted and `Model:save()` will return false
+
+```lua
+local function hasLastName(self)
+  if not self:get('lastName') then
+    error('No last name was specified')
+  end
+end
+User:on('saving', hasLastName)
+```
+
+Also any changes done to self on the event handlers are persisted
+```lua
+local function validateStates(self)
+  local state = self:get('state')
+  if state == 'CA' then
+    self:set {state = 'California'}
+  end
+end
+```
+
 ## Changelog
 
  * 0.0.3 Adds `creating`, `created`, `saving`, `saved`, `updating` and `updated` events
