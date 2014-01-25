@@ -2,7 +2,7 @@
   "name": "modeloespecial",
   "description": "an orm for sqlite",
   "main": "modeloespecial.lua",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "ignore": [
     "config.lua",
     "main.lua",
@@ -13,6 +13,6 @@
   "dependencies": {
     "log": "~0.3.0",
     "middleclass": "~3.0.1",
-    "vent": "~0.2.0"
+    "vent": "~0.4.2"
   }
 }

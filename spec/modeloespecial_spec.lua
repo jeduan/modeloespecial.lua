@@ -21,7 +21,7 @@ describe('Database', function()
 
 	it('models have access to the db object', function()
 		assert.truthy(model.db)
-		local Player = model:extend {table = 'players'}
+		local Player = db.Model:extend {table = 'players'}
 		assert.truthy(Player.db)
 	end)
 end)

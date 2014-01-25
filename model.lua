@@ -4,6 +4,7 @@ local vent = require 'vendor.vent.vent'
 local sqlite = require 'sqlite3'
 
 local Model = class('Model')
+Model:include(vent)
 
 function Model:initialize(attributes, options)
 	assert(type(self) == 'table', 'Called .new instead of :new')
@@ -35,13 +36,34 @@ function Model:initialize(attributes, options)
 	-- TODO aqui se pueden poner los defaults
 end
 
+function Model:_pcallListeners(event)
+	local status, err
+	for _, listener in pairs(self:getListeners(event)) do
+		status, err = pcall(listener.callback, self)
+		if not status then
+			return status, err
+		end
+	end
+
+	return true
+end
+
 function Model:save()
 	assert(self.class.db, 'The database is closed')
 	assert(self.class.db:isopen(), 'The database is closed')
+	local status, err
+	status, err = self:_pcallListeners('saving')
+	if not status then return end
+
 	if not self.id then
-		return self:insert()
+		status, err = self:_pcallListeners('creating')
+		if not status then return end
+		return self:_create()
+
 	else
-		return self:update()
+		status, err = self:_pcallListeners('updating')
+		if not status then return end
+		return self:_update()
 	end
 end
 
@@ -81,7 +103,7 @@ function Model:set(key, val, options)
 	return self
 end
 
-function Model.static:fetchById(id)
+function Model.static:fetchById(id, options)
 	assert(type(self) == 'table', 'Tried to call .fetchById() instead of :fetchById()')
 	assert(type(id) == 'number', 'Expected arg to be a number')
 
@@ -108,12 +130,15 @@ function Model.static:fetchById(id)
 	elseif step == sqlite.DONE then
 		stmt:finalize()
 		stmt = nil
+		if options and options.required then
+			error('The model was not found')
+		end
 		return nil
 	end
 
 end
 
-function Model:insert()
+function Model:_create()
 	assert(not self.id, 'Tried to run insert on a model with id')
 	local sql = 'INSERT INTO %s (%s) VALUES (%s)'
 	local storedAttributes = {}
@@ -144,11 +169,13 @@ function Model:insert()
 	stmt = nil
 	self.id = self.class.db:last_insert_rowid()
 	assert(self.id ~= 0, 'Insert failed')
+	self:trigger('saved')
+	self:trigger('created')
 
 	return self.id
 end
 
-function Model:update()
+function Model:_update()
 	assert(self.id, 'Tried to run update on not inserted model')
 
 	local sql = 'UPDATE %s SET %s WHERE %s=:modelId'
@@ -182,6 +209,8 @@ function Model:update()
 
 	if step == sqlite.DONE then
 		self.changed = {}
+		self:trigger('saved')
+		self:trigger('updated')
 		return true
 	else
 		return nil, self.class.db:errmsg()
