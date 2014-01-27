@@ -169,9 +169,9 @@ function Model:_create()
 	stmt:finalize()
 	stmt = nil
 	self.id = self.class.db:last_insert_rowid()
+	self:trigger('created', self)
+	self:trigger('saved', self)
 	assert(self.id ~= 0, 'Insert failed')
-	self:trigger('saved')
-	self:trigger('created')
 
 	return self.id
 end
@@ -180,7 +180,6 @@ function Model:_update()
 	assert(self.id, 'Tried to run update on not inserted model')
 
 	local sql = 'UPDATE %s SET %s WHERE %s=:modelId'
-	-- TODO validate object first
 
 	local values = {modelId = self.id}
 	local changes = {}
@@ -215,9 +214,9 @@ function Model:_update()
 	end
 
 	if step == sqlite.DONE then
+		self:trigger('updated', {changes = self.changes, values = values})
+		self:trigger('saved', self)
 		self.changed = {}
-		self:trigger('saved')
-		self:trigger('updated')
 		return true
 	else
 		return nil, self.class.db:errmsg()
