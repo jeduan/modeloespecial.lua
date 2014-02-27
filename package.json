@@ -1,0 +1,13 @@
+{
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/jeduan/modeloespecial.lua.git"
+  },
+  "devDependencies": {
+    "grunt-contrib-copy": "~0.5.0",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-release": "~0.7.0",
+    "grunt": "~0.4.2",
+    "grunt-contrib-compress": "~0.7.0"
+  }
+}

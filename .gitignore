@@ -4,3 +4,6 @@ main.lua
 vendor
 node_modules
 dist
+.envrc
+build
+.DS_Store
