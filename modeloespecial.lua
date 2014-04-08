@@ -239,6 +239,46 @@ function Model.static:fetchById(id, options)
 
 end
 
+
+function Model.static:fetchBy(params, options)
+	assert(type(self) == 'table', 'Tried to call .fetchBy() instead of :fetchBy()')
+	assert(type(params) == 'table', 'Expected arg to be a number')
+
+	local attrs = {self.idAttribute}
+	for k, v in pairs(self.attrs) do
+		table.insert(attrs, k)
+	end
+
+	local bindParams = {}
+	for k, _ in pairs(params) do
+		bindParams[#bindParams + 1] = k .. '=:' .. k
+	end
+	local sql = string.format('SELECT %s FROM %s WHERE %s',
+		table.concat(attrs, ', '),
+		self.tableName,
+		table.concat(bindParams, ' AND ')
+	)
+
+	local stmt = self.db:prepare(sql)
+	assert(stmt, 'Failed to prepare select-id statement')
+
+	assert(stmt:bind_names(params) == sqlite.OK, 'Failed to bind parameters')
+	local step = stmt:step()
+
+	if step == sqlite.ROW then
+		local attributes = stmt:get_named_values()
+		return self:new(attributes, {synced = true})
+	elseif step == sqlite.DONE then
+		stmt:finalize()
+		stmt = nil
+		if options and options.required then
+			error('The model was not found')
+		end
+		return nil
+	end
+
+end
+
 function Model:_create()
 	assert(not self.id, 'Tried to run insert on a model with id')
 	local sql = 'INSERT INTO %s (%s) VALUES (%s)'

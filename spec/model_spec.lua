@@ -181,6 +181,13 @@ describe('Model', function()
 			assert.equal(_, nil)
 		end)
 
+		it('fetches a document by params', function()
+			local p = Player:fetchBy {name = 'Manolo'}
+			assert.equal('Manolo', p:get('name'))
+			assert.equal(1, p.id)
+
+		end)
+
 	end)
 
 	describe('Model functionalities', function()

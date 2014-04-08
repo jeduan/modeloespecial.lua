@@ -141,6 +141,14 @@ Finds a user by the id
 local user = User.fetchById(1)
 ```
 
+### Model:fetchBy()
+
+Finds a user by the specified params
+
+```lua
+local user = User.fetchBy {name = 'Foo'}
+```
+
 ### Model.defaults
 
 Sets default values for attributes
