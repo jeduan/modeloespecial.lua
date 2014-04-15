@@ -169,9 +169,26 @@ function Model:save()
 	end
 end
 
-function Model:get(attribute)
+function Model:get(attribute, options)
 	assert(type(self) == 'table', 'Called .get instead of :get')
-	return self.attributes[attribute]
+	options = options or {}
+	if not options.skipCache then
+		return self.attributes[attribute]
+	else
+		local sql = string.format('SELECT %s FROM %s WHERE %s = ?',
+		attribute, self.class.tableName, self.class.idAttribute)
+		local stmt = self.class.db:prepare(sql)
+		stmt:bind_values(self.id)
+		local row = stmt:step()
+		if row == sqlite.ROW then
+			local ret = stmt:get_value(0)
+			stmt:finalize()
+			stmt = nil
+			return ret
+		elseif row == sqlite.DONE then
+			return nil
+		end
+	end
 end
 
 function Model:set(key, val, options)
