@@ -8,7 +8,10 @@
     "main.lua",
     "build.settings",
     "mocks",
-    "spec"
+    "spec",
+    "node_modules",
+    "Gruntfile.js",
+    "package.json"
   ],
   "dependencies": {
     "log": "~0.3.0",
